@@ -112,18 +112,7 @@ function SearchForm({
             )}
           />
 
-          {/* GPS Coordinates - Hidden field for form submission */}
-          <FormField
-            control={form.control}
-            name="gpscoords"
-            render={({ field }) => (
-              <FormItem className="hidden">
-                <FormControl>
-                  <input type="hidden" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+          {/* GPS Coordinates are set via handleAddressSelect callback - no hidden field needed */}
 
           {/* Date and Time Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
