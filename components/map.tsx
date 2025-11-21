@@ -58,11 +58,16 @@ function Map({ mapParams }: { mapParams: string}) {
     },[isLoaded, mapParams])
 
     function setMarker(map: google.maps.Map) {
+        // Guard against null or empty params
+        if (!params || params.length === 0) {
+            return
+        }
+
         infoWindow = new google.maps.InfoWindow({
             maxWidth: 200
         })
 
-        params.map((loc, index) => {
+        params.forEach((loc, index) => {
 
             const marker = new google.maps.marker.AdvancedMarkerElement({
                 map: map,
