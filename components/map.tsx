@@ -3,12 +3,29 @@
 import { buildMapInfoCardContent, buildMapInfoCardContentForDestination, destinationPin, getStreetFromAddress, libs, parkingPin, parkingPinWithIndex } from "@/lib/utils"
 import { MapAddressType, MapParams } from "@/types"
 import { useJsApiLoader, Libraries } from "@react-google-maps/api"
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 
 function Map({ mapParams }: { mapParams: string}) {
-
-    const params = JSON.parse(mapParams) as MapParams[]
     let infoWindow: google.maps.InfoWindow
+
+    // Parse and validate mapParams with useMemo to handle updates
+    const params = useMemo(() => {
+        try {
+            const parsed = JSON.parse(mapParams) as MapParams[]
+            if (!parsed || parsed.length === 0) {
+                return null
+            }
+            return parsed
+        } catch (error) {
+            console.error('Error parsing mapParams:', error)
+            return null
+        }
+    }, [mapParams])
+
+    // Early return if params is invalid
+    if (!params || params.length === 0) {
+        return <div className="p-4 text-slate-400">No locations to display on map</div>
+    }
 
     const { isLoaded } = useJsApiLoader({
         nonce: "477d4456-f7b5-45e2-8945-5f17b3964752",
@@ -21,8 +38,9 @@ function Map({ mapParams }: { mapParams: string}) {
     const getPinType = (loc: MapParams): string => {
         return loc.type === MapAddressType.DESTINATION ? 'parking_destination_tr' : 'parking_pin_tr'
     }
+
     useEffect(() => {
-        if (isLoaded) {
+        if (isLoaded && params && params.length > 0 && mapRef.current) {
             const mapOptions = {
                 center: {
                     lat: params[0].gpscoords.lat,
@@ -37,7 +55,7 @@ function Map({ mapParams }: { mapParams: string}) {
             setMarker(gMap)
 
         }
-    },[isLoaded])
+    },[isLoaded, mapParams])
 
     function setMarker(map: google.maps.Map) {
         infoWindow = new google.maps.InfoWindow({
