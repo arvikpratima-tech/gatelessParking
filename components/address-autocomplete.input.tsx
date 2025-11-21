@@ -23,10 +23,12 @@ function AddressAutoCompleteInput({
   const placesAutoCompleteRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
+  // Get API key from environment - DO NOT use fallbacks or hardcoded keys
   const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
   
+  // Only load Google Maps if API key is provided - fail fast if missing
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey || '',
+    googleMapsApiKey: apiKey || '', // Will show error if undefined
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
 

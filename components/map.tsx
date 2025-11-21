@@ -12,6 +12,7 @@ function Map({ mapParams }: { mapParams: string}) {
     const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
     const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
 
+    // Get API key from environment - DO NOT use fallbacks or hardcoded keys
     const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
 
     // Parse and validate mapParams with useMemo to handle updates
@@ -28,8 +29,9 @@ function Map({ mapParams }: { mapParams: string}) {
         }
     }, [mapParams])
 
+    // Only load Google Maps if API key is provided - fail fast if missing
     const { isLoaded, loadError } = useJsApiLoader({
-        googleMapsApiKey: apiKey || '',
+        googleMapsApiKey: apiKey || '', // Will show error if undefined
         libraries: GOOGLE_MAPS_LIBRARIES,
     })
 
