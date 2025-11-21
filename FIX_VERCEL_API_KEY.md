@@ -2,12 +2,9 @@
 
 ## The Problem
 
-Your console shows this API key being used:
-```
-AIzaSyBFQDH_KmNznrIXkBdu24-g1_iZcQ5SGAQ
-```
+If your console shows a hardcoded API key being used (like an example key from a tutorial or documentation), it means **your Vercel environment variable has the wrong key**.
 
-This means **your Vercel environment variable has the wrong key** (likely an old example key).
+**⚠️ SECURITY NOTE:** Never commit API keys to Git. If your API key was exposed, immediately delete it in Google Cloud Console and create a new one.
 
 ## ⚠️ Critical: Check Vercel Environment Variables
 
@@ -21,13 +18,13 @@ This means **your Vercel environment variable has the wrong key** (likely an old
 
 1. Look for `NEXT_PUBLIC_MAPS_API_KEY`
 2. Check what value is currently set
-3. **If it shows** `AIzaSyBFQDH_KmNznrIXkBdu24-g1_iZcQ5SGAQ` **or any other hardcoded key**, that's the problem!
+3. **If it shows any hardcoded example key** (especially one from tutorials or documentation), that's the problem!
 
 ### Step 3: Update the API Key
 
 1. Click on `NEXT_PUBLIC_MAPS_API_KEY` to edit
-2. **Delete the old value** (the hardcoded key)
-3. **Enter your actual Google Maps API key** (starts with `AIzaSy...` but different)
+2. **Delete the old value** (any hardcoded example key)
+3. **Enter your actual Google Maps API key** (starts with `AIzaSy...` - use your own unique key from Google Cloud Console)
 4. Make sure it's selected for:
    - ✅ Production
    - ✅ Preview  
@@ -92,14 +89,15 @@ After redeploying:
 1. Open your Vercel site
 2. Open browser console (F12)
 3. Check Network tab for Google Maps requests
-4. The API key in the request URL should **NOT** be `AIzaSyBFQDH_KmNznrIXkBdu24-g1_iZcQ5SGAQ`
-5. It should be your new API key
+4. Verify the API key in the request URL is your own key, not an example key
+5. It should work without the "Do you own this website?" error
 
 ## 🚨 Common Mistakes
 
 ### ❌ Don't do this:
 - Set environment variable to a hardcoded example key
 - Use someone else's API key from a tutorial
+- Commit API keys to GitHub (NEVER commit .env files)
 - Forget to configure HTTP referrer restrictions
 - Use an API key without billing enabled
 
@@ -108,12 +106,23 @@ After redeploying:
 - Configure proper restrictions
 - Enable billing (free $200/month credit)
 - Update Vercel environment variables correctly
+- Never commit API keys to public repositories
+
+## 🔒 Security: If Your API Key Was Exposed
+
+If your API key was accidentally exposed in a public GitHub repository:
+
+1. **Immediately go to Google Cloud Console**
+2. **Delete or restrict the exposed API key**
+3. **Create a new API key**
+4. **Update Vercel environment variable with the new key**
+5. **Never commit API keys to Git** - always use environment variables
 
 ## 🔍 Quick Check
 
 To verify your code is using the environment variable (not hardcoded):
 
-1. Search your codebase: `grep -r "AIzaSy" .` (should find nothing except docs)
+1. Search your codebase: `grep -r "AIzaSy" .` (should find nothing except placeholder text in docs)
 2. Check Vercel logs for environment variable usage
 3. Check browser console for the API key in network requests
 
