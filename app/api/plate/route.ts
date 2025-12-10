@@ -337,7 +337,7 @@ export async function POST(req: Request) {
         // Send violation email if no booking
         if (isViolation) {
             try {
-                await sendViolationEmail(normalizedPlate, address, detectionTimestamp)
+                await sendViolationEmail(normalizedPlate, address, detectionTimestamp.toISOString())
             } catch (emailError) {
                 console.error('Failed to send violation email (non-fatal):', emailError)
             }
