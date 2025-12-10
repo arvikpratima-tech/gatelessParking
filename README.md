@@ -17,6 +17,17 @@ CLERK_SECRET_KEY=<CLERK_PRIVATE>
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
+APP_KEY=<YOUR_APP_KEY_FOR_ALPR_API>
+
+# Email Notifications
+VIOLATION_EMAIL=<YOUR_EMAIL_FOR_VIOLATION_NOTIFICATIONS>
+OVERSTAY_EMAIL=<YOUR_EMAIL_FOR_OVERSTAY_NOTIFICATIONS> (Optional - falls back to VIOLATION_EMAIL if not set)
+
+# Security Features (Optional)
+HF_API_TOKEN=<YOUR_HUGGINGFACE_TOKEN>
+THREAT_DETECTION_MODEL=Subh775/Threat-Detection-YOLOv8n
+TTS_MODEL=ai4bharat/indic-parler-tts
+
 ## Getting Started
 
 First, run the development server:
@@ -45,6 +56,19 @@ To learn more about Next.js, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+
+## Security Features
+
+This application includes integrated weapon/threat detection, fire detection, and text-to-speech security alerts. See [SECURITY_FEATURES.md](./SECURITY_FEATURES.md) for details.
+
+- **Threat Detection**: Detects weapons in images using YOLOv8
+- **Fire Detection**: Detects fire, flames, and smoke in images using YOLOv8
+- **Text-to-Speech**: Generates audio alerts using Indian English TTS
+- **API Endpoints**: 
+  - `/api/security/threat-detection` - Threat/weapon detection
+  - `/api/security/fire-detection` - Fire detection
+  - `/api/security/text-to-speech` - Text-to-speech conversion
+  - `/api/security/alert` - Combined security alert pipeline
 
 ## Deploy on Vercel
 

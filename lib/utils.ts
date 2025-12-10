@@ -76,40 +76,38 @@ address: string): string => {
 </div>`;
 }
 
-export const parkingPin = (type: string) => {
-  const glyphImg = document.createElement('div')
-  glyphImg.innerHTML = `
-<div class="map_pin_container">
-<img src='/${type}.png' />
-</div>
-`
-  const pinElement = new google.maps.marker.PinElement({
-    glyph: glyphImg
-  })
-  return pinElement
+type MarkerOptions = {
+  map: google.maps.Map;
+  position: google.maps.LatLngLiteral; // MUST be { lat, lng }
+};
+
+export function destinationPin({ map, position }: MarkerOptions): google.maps.Marker {
+  return new google.maps.Marker({
+    map,
+    position,
+    title: 'Destination',
+  });
 }
 
-export const parkingPinWithIndex = (type: string, index: number) => {
-  const glyphImg = document.createElement('div')
-  glyphImg.innerHTML = `
-<div class="map_pin_container">
-<div class="map_pin_id"><span>${index}</span></div>
-<img src='/${type}.png' />
-</div>
-`
-  const pinElement = new google.maps.marker.PinElement({
-    glyph: glyphImg
-  })
-  return pinElement
+type ParkingMarkerOptions = MarkerOptions & {
+  index: number;
+};
+
+export function parkingPinWithIndex({ map, position, index }: ParkingMarkerOptions): google.maps.Marker {
+  return new google.maps.Marker({
+    map,
+    position,
+    label: String(index), // show 1,2,3...
+    title: `Parking spot #${index}`,
+  });
 }
 
-export const destinationPin = (type: string) => {
-  const glyphImg = document.createElement('img');
-  glyphImg.src = `/${type}.png`;
-  const pinElement = new google.maps.marker.PinElement({
-    glyph: glyphImg
-  })
-  return pinElement
+export function parkingPin({ map, position }: MarkerOptions): google.maps.Marker {
+  return new google.maps.Marker({
+    map,
+    position,
+    title: 'Parking Location',
+  });
 }
 
 export type ReturnType = {

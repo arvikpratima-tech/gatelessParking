@@ -28,9 +28,41 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python Virtual Environment (ALPR System)
+Main/.venv/
+Main/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# YOLO Model Files (Too Large for Git)
+*.pt
+Main/*.pt
+Main/.venv/*.pt
+
+# Audio Files (Too Large for Git)
+*.mp3
+*.wav
+Main/*.mp3
+Main/.venv/*.mp3
+
+# Test Images and Debug Files
+Main/*.jpg
+Main/*.png
+Main/debug_*.jpg
+Main/test_*.jpg
+
+# Python Test Scripts
+Main/test_*.py
+Main/*_diagnostic.py
+
+# Session and temporary files
+SESSION_SUMMARY.md

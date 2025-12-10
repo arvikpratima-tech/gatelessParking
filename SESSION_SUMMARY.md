@@ -178,13 +178,32 @@ This document summarizes the comprehensive analysis and fixes applied to the **G
 
 ---
 
+### 9. Google Maps Deprecation Warnings ✅
+
+**Problems**:
+- Deprecated `glyph` property in `PinElement` (should use `glyphElement` or `glyphSrc`)
+- Map initialized without Map ID (causes warning for Advanced Markers)
+
+**Fixed In**:
+- `lib/utils.ts` - Updated all pin creation functions
+- `components/map.tsx` - Added optional Map ID support
+
+**Solutions**:
+- Replaced `glyph` with `glyphElement` in `parkingPin()`, `parkingPinWithIndex()`, and `destinationPin()`
+- Added optional `mapId` support via `NEXT_PUBLIC_MAPS_MAP_ID` environment variable
+- Map ID is only added if provided (backward compatible)
+
+**Note**: Map ID is optional - Advanced Markers work without it, but adding one removes the warning and enables vector map styles.
+
+---
+
 ## Files Modified
 
 ### Core Components
 1. `components/address-autocomplete.input.tsx` - Fixed autocomplete integration, validation, cleanup
-2. `components/map.tsx` - Fixed map rendering, cleanup, error handling
+2. `components/map.tsx` - Fixed map rendering, cleanup, error handling, added optional Map ID support
 3. `components/search-form.tsx` - Fixed form integration, removed hidden input
-4. `lib/utils.ts` - Fixed localhost URLs in pin images
+4. `lib/utils.ts` - Fixed localhost URLs in pin images, replaced deprecated `glyph` with `glyphElement`
 5. `lib/google-maps.ts` - Created shared libraries constant
 6. `actions/actions.ts` - Fixed async issues, date handling
 7. `components/email-template.tsx` - Fixed localhost URL
@@ -206,6 +225,8 @@ This document summarizes the comprehensive analysis and fixes applied to the **G
 - Backend async issues fixed
 - Email template uses dynamic URLs
 - Security: Exposed API key removed from repository
+- Google Maps deprecation warnings fixed (`glyph` → `glyphElement`)
+- Optional Map ID support added for Advanced Markers
 
 ### ⚠️ Requires User Action
 1. **Delete exposed API key** in Google Cloud Console
@@ -215,9 +236,8 @@ This document summarizes the comprehensive analysis and fixes applied to the **G
 5. **Enable billing** in Google Cloud Console ($200/month free credit)
 
 ### 📋 Known Issues (Non-Breaking)
-1. Deprecation warning: `glyph` property in PinElement (should use `glyphSrc` or `glyphElement`)
-2. Warning: Map initialized without Map ID (AdvancedMarkerElement works without it, but recommended to add)
-3. Deprecation warning: `google.maps.places.Autocomplete` (should migrate to `PlaceAutocompleteElement` later)
+1. Deprecation warning: `google.maps.places.Autocomplete` (should migrate to `PlaceAutocompleteElement` later)
+   - This is a future migration - current implementation works fine
 
 ---
 
@@ -227,6 +247,7 @@ This document summarizes the comprehensive analysis and fixes applied to the **G
 
 ```
 NEXT_PUBLIC_MAPS_API_KEY=your_google_maps_key
+NEXT_PUBLIC_MAPS_MAP_ID=your_map_id (optional - removes Advanced Marker warning)
 MONGODB_URI=your_mongodb_connection_string
 NEXT_PUBLIC_STRIPE_APPLICATION_ID=your_stripe_public_key
 STRIPE_SECRET_KEY=your_stripe_secret_key
@@ -307,10 +328,9 @@ NEXT_PUBLIC_APP_URL=https://your-app.vercel.app (optional, for email links)
 
 ### Long Term
 1. Migrate to `PlaceAutocompleteElement` (new Google Places API)
-2. Add Map ID for better AdvancedMarkerElement support
-3. Recreate Python ALPR source code if missing
-4. Add comprehensive error logging
-5. Set up monitoring and analytics
+2. Recreate Python ALPR source code if missing
+3. Add comprehensive error logging
+4. Set up monitoring and analytics
 
 ---
 

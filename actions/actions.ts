@@ -3,6 +3,8 @@
 import EmailTemplate from "@/components/email-template"
 import { SearchParams } from "@/components/search-component"
 import ViolationEmailTemplate from "@/components/violation-email-template"
+import OverstayEmailTemplate from "@/components/overstay-email-template"
+import FireAlertEmailTemplate from "@/components/fire-alert-email-template"
 import { connectToDB } from "@/lib/db"
 import { Booking, BookingModel } from "@/schemas/booking"
 import { ParkingLocation, ParkingLocationModel } from "@/schemas/parking-locations"
@@ -248,6 +250,131 @@ export async function sendViolationEmail(plate: string, address: string, timesta
         return {
             code: 0,
             message: 'Email sent',
+            error: error
+        }
+
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+}
+
+export async function sendOverstayEmail(
+    plate: string,
+    address: string,
+    overstayHours: number,
+    overstayMinutes: number,
+    additionalCharge: number,
+    originalEndTime: string,
+    currentTime: string,
+    bookingId?: string
+): Promise<ActionResponse> {
+
+    try {
+        // Use OVERSTAY_EMAIL if set, otherwise fall back to VIOLATION_EMAIL
+        const recipientEmail = process.env.OVERSTAY_EMAIL || process.env.VIOLATION_EMAIL
+
+        if (!recipientEmail) {
+            console.warn('No email configured for overstay notifications (OVERSTAY_EMAIL or VIOLATION_EMAIL)')
+            return {
+                code: 1,
+                message: 'No email configured for overstay notifications'
+            }
+        }
+
+        const { data, error } = await resend.emails.send({
+            from: "Gateless Parking <onboarding@resend.dev>",
+            to: recipientEmail,
+            subject: `⚠️ Vehicle Overstay Alert - ${plate} - Additional Charge: ₹${additionalCharge.toFixed(2)}`,
+            react: OverstayEmailTemplate({
+                plate: plate,
+                address: address,
+                overstayHours: overstayHours,
+                overstayMinutes: overstayMinutes,
+                additionalCharge: additionalCharge,
+                originalEndTime: originalEndTime,
+                currentTime: currentTime,
+                bookingId: bookingId
+            })
+        })
+
+        if (error) {
+            console.log(error)
+            return {
+                code: 1,
+                message: 'Failed to send overstay email',
+                error: error
+            }
+        }
+
+        return {
+            code: 0,
+            message: 'Overstay email sent',
+            error: error
+        }
+
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+}
+
+export async function sendFireAlertEmail(
+    address: string,
+    fires: Array<{ label: string; score: number }>,
+    timestamp: string,
+    zoneName?: string,
+    plate?: string,
+    vehicleColor?: string,
+    vehicleType?: string,
+    cameraId?: string,
+    locationId?: string
+): Promise<ActionResponse> {
+
+    try {
+        // Use FIRE_ALERT_EMAIL if set, otherwise fall back to VIOLATION_EMAIL
+        const recipientEmail = process.env.FIRE_ALERT_EMAIL || process.env.VIOLATION_EMAIL
+
+        if (!recipientEmail) {
+            console.warn('No email configured for fire alerts (FIRE_ALERT_EMAIL or VIOLATION_EMAIL)')
+            return {
+                code: 1,
+                message: 'No email configured for fire alerts'
+            }
+        }
+
+        const highestConfidence = Math.max(...fires.map(f => f.score))
+        const severity = highestConfidence > 0.8 ? 'CRITICAL' : highestConfidence > 0.5 ? 'HIGH' : 'MEDIUM'
+
+        const { data, error } = await resend.emails.send({
+            from: "Gateless Parking <onboarding@resend.dev>",
+            to: recipientEmail,
+            subject: `🚨 FIRE DETECTED [${severity}] - ${zoneName || address} - ${fires.length} detection(s)`,
+            react: FireAlertEmailTemplate({
+                address: address,
+                zoneName: zoneName,
+                plate: plate,
+                vehicleColor: vehicleColor,
+                vehicleType: vehicleType,
+                fires: fires,
+                timestamp: timestamp,
+                cameraId: cameraId,
+                locationId: locationId
+            })
+        })
+
+        if (error) {
+            console.log(error)
+            return {
+                code: 1,
+                message: 'Failed to send fire alert email',
+                error: error
+            }
+        }
+
+        return {
+            code: 0,
+            message: 'Fire alert email sent',
             error: error
         }
 

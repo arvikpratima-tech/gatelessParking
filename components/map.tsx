@@ -6,11 +6,20 @@ import { useJsApiLoader } from "@react-google-maps/api"
 import { useEffect, useMemo, useRef } from "react"
 import { GOOGLE_MAPS_LIBRARIES } from "@/lib/google-maps"
 
-function Map({ mapParams }: { mapParams: string}) {
+type LatLng = { lat: number; lng: number }
+
+type MapProps = {
+    mapParams: string
+    origin?: LatLng | null
+    destination?: LatLng | null
+}
+
+function Map({ mapParams, origin, destination }: MapProps) {
     const mapRef = useRef<HTMLDivElement>(null)
     const mapInstanceRef = useRef<google.maps.Map | null>(null)
-    const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+    const markersRef = useRef<google.maps.Marker[]>([])
     const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
+    const userMarkerRef = useRef<google.maps.Marker | null>(null)
 
     // Get API key from environment - DO NOT use fallbacks or hardcoded keys
     const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
@@ -35,9 +44,6 @@ function Map({ mapParams }: { mapParams: string}) {
         libraries: GOOGLE_MAPS_LIBRARIES,
     })
 
-    const getPinType = (loc: MapParams): string => {
-        return loc.type === MapAddressType.DESTINATION ? 'parking_destination_tr' : 'parking_pin_tr'
-    }
 
     useEffect(() => {
         // Only run on client side
@@ -64,9 +70,7 @@ function Map({ mapParams }: { mapParams: string}) {
                     lat: params[0].gpscoords.lat,
                     lng: params[0].gpscoords.lng
                 },
-                zoom: 14,
-                // Remove mapId if not configured - AdvancedMarkerElement can work without it
-                // mapId: 'MY-MAP-ID-1234' // Only use if you've created a Map ID in Google Cloud Console
+                zoom: 14
             }
 
             const gMap = new window.google.maps.Map(mapRef.current as HTMLDivElement, mapOptions)
@@ -79,39 +83,67 @@ function Map({ mapParams }: { mapParams: string}) {
 
             // Clear previous markers
             markersRef.current.forEach(marker => {
-                marker.map = null;
+                marker.setMap(null);
             });
             markersRef.current = [];
+            if (userMarkerRef.current) {
+                userMarkerRef.current.setMap(null)
+                userMarkerRef.current = null
+            }
 
             // Create markers
             params.forEach((loc, index) => {
                 try {
-                    const marker = new window.google.maps.marker.AdvancedMarkerElement({
-                        map: gMap,
-                        position: loc.gpscoords,
-                        title: loc.address
-                    });
-
-                    markersRef.current.push(marker);
+                    let marker: google.maps.Marker;
+                    let infoContent: string;
 
                     if (loc.type === MapAddressType.PARKINGLOCATION) {
-                        marker.setAttribute("content", buildMapInfoCardContent(
+                        // For indexed parking locations
+                        marker = parkingPinWithIndex({
+                            map: gMap,
+                            position: {
+                                lat: loc.gpscoords.lat,
+                                lng: loc.gpscoords.lng
+                            },
+                            index: index + 1
+                        });
+                        infoContent = buildMapInfoCardContent(
                             getStreetFromAddress(loc.address),
                             loc.address,
                             loc.numberofspots as number,
                             loc.price?.hourly as number
-                        ));
-                        marker.content = parkingPinWithIndex(getPinType(loc), index).element;
+                        );
                     } else if(loc.type === MapAddressType.ADMIN) {
-                        marker.setAttribute("content", buildMapInfoCardContent(
+                        // For admin locations
+                        marker = parkingPin({
+                            map: gMap,
+                            position: {
+                                lat: loc.gpscoords.lat,
+                                lng: loc.gpscoords.lng
+                            }
+                        });
+                        infoContent = buildMapInfoCardContent(
                             getStreetFromAddress(loc.address),
                             loc.address,
                             loc.numberofspots as number,
                             loc.price?.hourly as number
-                        ));
-                        marker.content = parkingPin(getPinType(loc)).element;
+                        );
                     } else {
-                        const cityCircle = new window.google.maps.Circle({
+                        // For destination
+                        marker = destinationPin({
+                            map: gMap,
+                            position: {
+                                lat: loc.gpscoords.lat,
+                                lng: loc.gpscoords.lng
+                            }
+                        });
+                        infoContent = buildMapInfoCardContentForDestination(
+                            getStreetFromAddress(loc.address), 
+                            loc.address
+                        );
+
+                        // Add circle for destination
+                        new window.google.maps.Circle({
                             strokeColor: '#00FF00',
                             strokeOpacity: 0.8,
                             strokeWeight: 2,
@@ -124,28 +156,48 @@ function Map({ mapParams }: { mapParams: string}) {
                             },
                             radius: loc.radius || 1000
                         });
-
-                        marker.content = destinationPin(getPinType(loc)).element;
-                        marker.setAttribute("content", buildMapInfoCardContentForDestination(
-                            getStreetFromAddress(loc.address), 
-                            loc.address
-                        ));
                     }
 
+                    markersRef.current.push(marker);
+
+                    // Add click listener for info window
                     marker.addListener('click', () => {
                         if (infoWindowRef.current) {
                             infoWindowRef.current.close();
-                            infoWindowRef.current.setContent(marker.getAttribute('content'));
-                            infoWindowRef.current.open({
-                                map: gMap,
-                                anchor: marker
-                            });
+                            infoWindowRef.current.setContent(infoContent);
+                            infoWindowRef.current.open(gMap, marker);
                         }
                     });
                 } catch (error) {
                     console.error(`Error creating marker for ${loc.address}:`, error);
                 }
             });
+
+            // Render user/origin marker if provided
+            if (origin) {
+                userMarkerRef.current = new window.google.maps.Marker({
+                    map: gMap,
+                    position: origin,
+                    icon: {
+                        path: window.google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#2563eb",
+                        fillOpacity: 1,
+                        strokeColor: "#ffffff",
+                        strokeWeight: 2,
+                    },
+                    title: "You are here"
+                })
+            }
+
+            // Fit bounds if origin and destination are provided
+            if (origin && (destination || (params && params[0]?.gpscoords))) {
+                const bounds = new window.google.maps.LatLngBounds()
+                bounds.extend(origin)
+                const destPoint = destination || params[0].gpscoords
+                bounds.extend(destPoint as google.maps.LatLngLiteral)
+                gMap.fitBounds(bounds, 80)
+            }
         } catch (error) {
             console.error('Error initializing map:', error);
         }
@@ -154,9 +206,13 @@ function Map({ mapParams }: { mapParams: string}) {
         return () => {
             // Clear markers
             markersRef.current.forEach(marker => {
-                marker.map = null;
+                marker.setMap(null);
             });
             markersRef.current = [];
+            if (userMarkerRef.current) {
+                userMarkerRef.current.setMap(null)
+                userMarkerRef.current = null
+            }
             
             // Close info window
             if (infoWindowRef.current) {
@@ -167,7 +223,7 @@ function Map({ mapParams }: { mapParams: string}) {
             // Clear map instance
             mapInstanceRef.current = null;
         };
-    }, [isLoaded, apiKey, loadError, params, mapParams]);
+    }, [isLoaded, apiKey, loadError, params, origin, destination]);
 
     // Early return if params is invalid
     if (!params || params.length === 0) {
@@ -219,6 +275,7 @@ function Map({ mapParams }: { mapParams: string}) {
     return (
         <div className="flex flex-col space-y-4">
             <div style={{ height: '600px', width: '100%' }} ref={mapRef} />
+            {/* Directions temporarily disabled to prevent call stack overflow */}
         </div>
     )
 }
